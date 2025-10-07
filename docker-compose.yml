@@ -1,0 +1,32 @@
+services:
+  db-transactions:
+    image: postgres:14-alpine
+    container_name: finzen-db-transactions
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5433:5432"  # Host:5433 → Container:5432
+    volumes:
+      - postgres_transaction_data:/var/lib/postgresql/data
+
+  api-transactions:
+    build:
+      context: .
+    container_name: finzen-api-transactions
+    restart: on-failure
+    depends_on:
+      - db-transactions
+    ports:
+      - "8082:8080"  # ← Host:8082 → Container:8080
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db-transactions:5432/${POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS}
+
+volumes:
+  postgres_transaction_data:
