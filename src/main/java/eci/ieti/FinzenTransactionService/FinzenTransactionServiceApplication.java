@@ -20,11 +20,11 @@ public class FinzenTransactionServiceApplication {
 			if (categoryRepository.findAll().isEmpty()) {
 				String[] predefined = {"Food", "Transport", "Entertainment", "Health", "Housing", "Salary", "Other"};
 				for (String name : predefined) {
-					categoryRepository.save(Category.builder()
-							.userId(0L) // Global
-							.name(name)
-							.predefined(true)
-							.build());
+					Category cat = new Category();
+					cat.setUserId(0L);
+					cat.setName(name);
+					cat.setPredefined(true);
+					categoryRepository.save(cat);
 				}
 			}
 		};
