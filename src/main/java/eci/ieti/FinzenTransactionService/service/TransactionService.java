@@ -2,7 +2,6 @@ package eci.ieti.FinzenTransactionService.service;
 
 import eci.ieti.FinzenTransactionService.dto.TransactionDto;
 import eci.ieti.FinzenTransactionService.model.TransactionType;
-import eci.ieti.FinzenTransactionService.repository.TransactionRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
