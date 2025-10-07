@@ -1,98 +1,50 @@
-# FinzenTransactionService
+# Finzen Transaction Service
 
-FinzenTransactionService es una aplicación backend desarrollada con Spring Boot para gestionar transacciones financieras, presupuestos y categorías. Utiliza Spring Data JPA para interactuar con una base de datos relacional y Spring Security con JWT para autenticación. Este documento describe las entidades principales del proyecto: `Category`, `Transaction` y `Budget`.
+Microservicio Spring Boot para gestión de transacciones financieras (ingresos, gastos, presupuestos y categorías). Soporta autenticación JWT, persistencia en PostgreSQL y APIs REST seguras.
 
-## Entidades
+## Requisitos
+- Java 17+
+- Maven 3.8+
+- Docker & Docker Compose (para DB local)
+- PostgreSQL 14+ (producción)
 
-### 1. Category (Archivo: `Category.java`)
+## Instalación Local
+1. Clona el repo: `git clone https://github.com/FINZEN-ORG/FINZEN_TRANSACTION_SERVICE.git`.
+2. Copia `.env` y configura vars.
+3. Build: `mvn clean install`.
+4. Run con Docker: `docker-compose up` (DB en puerto 5433, app en 8082).
 
-**Propósito**: Representa categorías para clasificar transacciones y presupuestos. Las categorías pueden ser **predefinidas** (globales, compartidas por todos los usuarios, con `userId = 0`) o **personalizadas** (creadas por un usuario específico). Esto permite organizar gastos e ingresos en categorías como "Comida", "Transporte", etc.
+## Refactor y Actualizaciones (Versión 0.0.2)
+Este refactor se basa en 10 observaciones clave para mejorar seguridad, mantenibilidad y eficiencia. Se implementaron todas, con correcciones iterativas para compilación (e.g., tipos/constructores, acceso a setters), duplicación de código y documentación automática.
 
-**Campos clave**:
-- `id`: ID único autogenerado (clave primaria).
-- `userId`: ID del usuario dueño (0 para categorías predefinidas/globales).
-- `name`: Nombre de la categoría (único, no nulo).
-- `predefined`: Booleano que indica si es predefinida (por defecto `false` para personalizadas).
+### Cambios por Observación
+| Observación | Descripción | Cambios Implementados |
+|-------------|-------------|-----------------------|
+| **1. @Getter/@Setter vs @Data** | Evitar @Data en entidades sensibles (evita toString/hashCode con datos como amounts). | - Entidades (Category, Budget, Income, Expense): Cambiado a `@Getter/@Setter(AccessLevel.PUBLIC)`. <br> - DTOs: Mantuvo `@Data` (no sensibles). <br> - FIX: PUBLIC para acceso desde services/mappers. Seed usa constructores manuales. |
+| **2. DTO en lugar de Map** | Front envía DTOs, no Maps (type-safe, @Valid). | - Nuevos DTOs: `IncomeDto`, `ExpenseDto`, `CategoryDto`, `BudgetDto` con `@NotNull/@Min`. <br> - Controllers: `@RequestBody DTO` + `@Valid`. <br> - FIX: Orden fijo en constructores + `@AllArgsConstructor`. |
+| **3. Usar mapper (MapStruct)** | Auto-mapeo DTO ↔ Entity, sin manual. | - Nuevo: `TransactionMapper` interface (inyectado en services). <br> - Services/Controllers: `mapper.toDto(entity)` en lugar de `new DTO(...)`. <br> - FIX: `@Mapping` explícito para `categoryId` (evita type mismatch Double→Long). <br> - Config: Ya en `pom.xml`. |
+| **4. Tablas separadas (ingresos/gastos)** | Separar responsabilidades (Income/Expense). | - Nuevas entidades/repos: `Income`/`incomes`, `Expense`/`expenses`. <br> - Eliminado: `Transaction` entity/repo. <br> - Endpoints: `/incomes`, `/expenses`. Budget solo linkea a expenses. <br> - Reports: `ReportService` combina para legacy. <br> - **Reducción Duplicación**: Income/Expense heredan de `@MappedSuperclass BaseTransaction` (campos/validaciones comunes). Repos/services no modificados – herencia transparente. SonarQube score mejorado. |
+| **5. Campos createdAt/updatedAt** | Trazabilidad en todas tablas. | - Todas entidades: `@CreationTimestamp`/`@UpdateTimestamp` (Hibernate). <br> - Incluidos en DTOs para frontend. |
+| **6. Modificar solo en corto periodo** | Updates/deletes solo <24h desde createdAt. | - Services: Chequeo `LocalDateTime.now().minusHours(24).isAfter(createdAt)` en `delete()`. <br> - Excepción: `ShortPeriodExpiredException` (403 Forbidden). |
+| **7. Excepciones por entidad** | Custom exceptions organizadas. | - Paquete `exceptions/`: Subpaquetes (`income/`, `expense/`, etc.) con `XxxNotFoundException`. <br> - Base: `EntityNotFoundException`. |
+| **8. Lanzar en service, capturar en controller** | Throws en services, manejo HTTP en handlers. | - Services: `throw new XxxException(...)`. <br> - Controllers: Sin try-catch (delegan a global). |
+| **9. GlobalHandlerException** | Centraliza manejo de errores. | - Nuevo: `GlobalExceptionHandler` (@ControllerAdvice). <br> - Maneja @Valid (400), NotFound (404), ShortPeriod (403), genéricas (500). <br> - Respuestas: JSON `{ "error": "msg" }`. |
+| **10. Lógica en service, controller orquesta** | Controllers delgados, services ricos. | - Controllers: Reciben DTO, llaman service, devuelven response. <br> - Services: Validaciones, mapeos, queries, business rules (e.g., category existe, userId match). |
 
-**Relaciones**:
-- No tiene relaciones directas como `@ManyToOne`, pero es referenciada por `Transaction` y `Budget` (una categoría puede tener múltiples transacciones y presupuestos).
+### Archivos Nuevos/Modificados
+- **Nuevos**:
+    - Entidades: `Income.java`, `Expense.java`.
+    - DTOs: `IncomeDto.java`, `ExpenseDto.java`.
+    - Repos: `IncomeRepository.java`, `ExpenseRepository.java`.
+    - Services: `IncomeService.java`, `ExpenseService.java`, `ReportService.java`.
+    - Mapper: `TransactionMapper.java` (mappers/).
+    - Exceptions: Todas en `exceptions/` (e.g., `IncomeNotFoundException.java`).
+    - Handler: `GlobalExceptionHandler.java`.
+- **Modificados**:
+    - Entidades:`Transaction.java`(base heredada), `Budget.java`, `Category.java` (+timestamps, @Setter PUBLIC).
+    - DTOs: `BudgetDto.java`, `CategoryDto.java`, `TransactionDto.java` (+validaciones, orden constructores).
+    - Services: `BudgetService.java`, `CategoryService.java` (usa mappers/DTOs, métodos auxiliares como `getIncomesByUserId`).
+    - Controllers: `BudgetController.java`, `CategoryController.java`, `TransactionController.java` (endpoints separados, mappers sin manual new).
+    - Application: Seed con constructores manuales (new Category() + setters).
+- **Eliminados**:`TransactionRepository.java` (reemplazados).
 
-**Validaciones/Comportamiento**:
-- El nombre debe ser único en la base de datos.
-- En el servicio (`CategoryService`), se pueden crear categorías personalizadas y listar tanto las globales como las del usuario.
-
-**Uso en la aplicación**:
-- Usada en transacciones para categorizar gastos o ingresos (e.g., gasto en "Comida").
-- Usada en presupuestos para limitar gastos por categoría.
-
----
-
-### 2. Transaction (Archivo: `Transaction.java`)
-
-**Propósito**: Representa una transacción financiera individual, como un ingreso (`INCOME`) o gasto (`EXPENSE`). Registra movimientos de dinero, actualiza presupuestos automáticamente (resta de presupuestos en gastos) y permite generar reportes de totales.
-
-**Campos clave**:
-- `id`: ID único autogenerado.
-- `type`: Tipo de transacción (enum: `INCOME` o `EXPENSE`, almacenado como string en la BD).
-- `amount`: Monto (double, no nulo, validado para ser positivo y no exceder límites para evitar overflow).
-- `description`: Descripción opcional.
-- `date`: Fecha y hora de la transacción (`LocalDateTime`, no nulo, por defecto `now()` al crear).
-- `category`: Relación con una categoría (`@ManyToOne`, lazy fetch, no nulo).
-- `userId`: ID del usuario dueño (no nulo).
-
-**Relaciones**:
-- Muchas transacciones por categoría (`ManyToOne` con `Category`).
-
-**Validaciones/Comportamiento**:
-- `@PrePersist` y `@PreUpdate`: Valida que `amount` sea no nulo, >=0 y < `Double.MAX_VALUE/2` (para evitar problemas numéricos).
-- En el servicio (`TransactionService`): Al crear un `EXPENSE`, actualiza el presupuesto correspondiente restando el monto (usando `BudgetService.updateBudgetOnExpense`). Calcula totales de ingresos y gastos para reportes.
-
-**Uso en la aplicación**:
-- Core de la aplicación. Permite crear, listar y eliminar transacciones.
-- Genera reportes como el total de ingresos vs. gastos.
-
----
-
-### 3. Budget (Archivo: `Budget.java`)
-
-**Propósito**: Representa un presupuesto para una categoría específica por usuario. Define límites de gasto en un período (e.g., $500 en "Comida" de enero a febrero). El monto restante se actualiza automáticamente con los gastos.
-
-**Campos clave**:
-- `id`: ID único autogenerado.
-- `userId`: ID del usuario dueño (no nulo).
-- `category`: Relación con una categoría (`@ManyToOne`, lazy fetch, no nulo).
-- `amount`: Monto restante actual (double, no nulo).
-- `initialAmount`: Monto inicial del presupuesto (double, no nulo).
-- `startDate`: Fecha de inicio (`LocalDate`, opcional).
-- `endDate`: Fecha de fin (`LocalDate`, opcional).
-
-**Relaciones**:
-- Muchos presupuestos por categoría (`ManyToOne` con `Category`).
-
-**Validaciones/Comportamiento**:
-- `@PrePersist` y `@PreUpdate`: Valida que `amount` e `initialAmount` sean no nulos, >=0 y < `Double.MAX_VALUE/2`.
-- En el servicio (`BudgetService`): Crea o actualiza presupuestos (si existe para user+category, actualiza; sino crea). Lista por usuario. Actualiza `amount` restando gastos (y no permite negativos, setea a 0).
-
-**Uso en la aplicación**:
-- Limita y trackea gastos por categoría.
-- Integrado con transacciones: cada `EXPENSE` reduce el presupuesto correspondiente.
-
----
-
-## Notas Generales
-- **Base de datos**: Las entidades mapean a las tablas `categories`, `transactions` y `budgets`.
-- **Relaciones**: `Category` es "padre" de `Transaction` y `Budget` (vía `@ManyToOne`).
-- **Seguridad**: Todas las operaciones requieren autenticación vía JWT (`userId` extraído del token).
-- **Tecnologías**: Spring Boot, Spring Data JPA, Spring Security (JWT), Lombok.
-
-## Instalación
-1. Clona el repositorio: `git clone <URL-del-repositorio>`
-2. Configura la base de datos en `application.properties` (e.g., H2, PostgreSQL).
-3. Ejecuta: `mvn spring-boot:run`
-
-## Endpoints
-- `/api/categories`: GET (listar), POST (crear categoría personalizada).
-- `/api/budgets`: GET (listar), POST (crear/actualizar presupuesto).
-- `/api/transactions`: GET (listar), POST (crear), DELETE (eliminar), GET `/reports` (reportes).
-
-Para más detalles, consulta la documentación de los controladores (`BudgetController`, `CategoryController`, `TransactionController`).
