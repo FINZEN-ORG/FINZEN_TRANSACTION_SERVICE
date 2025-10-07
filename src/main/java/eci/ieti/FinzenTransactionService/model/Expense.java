@@ -1,26 +1,24 @@
 package eci.ieti.FinzenTransactionService.model;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
+import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "transactions")
-@Data
+@Table(name = "expenses")
+@Getter
+@Setter(AccessLevel.PUBLIC)
 @NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class Transaction {
+public class Expense {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @Column(nullable = false)
-    @Enumerated(EnumType.STRING)
-    private TransactionType type;
 
     @Column(nullable = false)
     private Double amount;
@@ -37,11 +35,18 @@ public class Transaction {
     @Column(nullable = false)
     private Long userId;
 
+    @CreationTimestamp
+    @Column(updatable = false)
+    private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
+
     @PrePersist
     @PreUpdate
     private void validateAmount() {
-        if (amount == null || amount < 0 || amount > Double.MAX_VALUE / 2) {
-            throw new IllegalArgumentException("Amount out of valid range");
+        if (amount == null || amount <= 0 || amount > Double.MAX_VALUE / 2) {
+            throw new IllegalArgumentException("Expense amount must be positive");
         }
     }
 }

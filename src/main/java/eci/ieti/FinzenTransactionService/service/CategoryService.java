@@ -1,38 +1,36 @@
 package eci.ieti.FinzenTransactionService.service;
 
 import eci.ieti.FinzenTransactionService.dto.CategoryDto;
+import eci.ieti.FinzenTransactionService.mappers.TransactionMapper;
 import eci.ieti.FinzenTransactionService.model.Category;
 import eci.ieti.FinzenTransactionService.repository.CategoryRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class CategoryService {
 
     private final CategoryRepository categoryRepository;
-
-    public CategoryService(CategoryRepository categoryRepository) {
-        this.categoryRepository = categoryRepository;
-    }
+    private final TransactionMapper mapper;
 
     public Category create(Category category) {
         return categoryRepository.save(category);
     }
 
     public List<CategoryDto> findByUserId(Long userId) {
-        return categoryRepository.findByUserIdOrUserId(userId, 0L).stream()
-                .map(c -> new CategoryDto(c.getId(), c.getName(), c.isPredefined()))
-                .collect(Collectors.toList());
+        return mapper.toCategoryDtos(categoryRepository.findByUserIdOrUserId(userId, 0L));
     }
 
-    public Category createCustomCategory(Long userId, String name) {
-        Category category = Category.builder()
-                .userId(userId)
-                .name(name)
-                .predefined(false)
-                .build();
+    public Category createCustomCategory(Long userId, CategoryDto dto) {
+        if (categoryRepository.findByName(dto.getName()).isPresent()) {
+            throw new IllegalArgumentException("Category name already exists");
+        }
+        Category category = mapper.toCategory(dto);
+        category.setUserId(userId);
+        category.setPredefined(false);
         return categoryRepository.save(category);
     }
 }
