@@ -1,76 +1,63 @@
 package eci.ieti.FinzenTransactionService.controller;
 
+import eci.ieti.FinzenTransactionService.dto.ExpenseDto;
+import eci.ieti.FinzenTransactionService.dto.IncomeDto;
 import eci.ieti.FinzenTransactionService.dto.TransactionDto;
-import eci.ieti.FinzenTransactionService.model.Category;
-import eci.ieti.FinzenTransactionService.model.TransactionType;
-import eci.ieti.FinzenTransactionService.repository.CategoryRepository;
-import eci.ieti.FinzenTransactionService.service.TransactionService;
+import eci.ieti.FinzenTransactionService.mappers.TransactionMapper;
+import eci.ieti.FinzenTransactionService.model.Expense;
+import eci.ieti.FinzenTransactionService.model.Income;
+import eci.ieti.FinzenTransactionService.service.ExpenseService;
+import eci.ieti.FinzenTransactionService.service.IncomeService;
+import eci.ieti.FinzenTransactionService.service.ReportService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/transactions")
+@RequiredArgsConstructor
 public class TransactionController {
+    private final IncomeService incomeService;
+    private final ExpenseService expenseService;
+    private final ReportService reportService;
+    private final TransactionMapper mapper;
 
-    private final TransactionService transactionService;
-    private final CategoryRepository categoryRepository;
-
-    public TransactionController(TransactionService transactionService, CategoryRepository categoryRepository) {
-        this.transactionService = transactionService;
-        this.categoryRepository = categoryRepository;
+    @PostMapping("/incomes")
+    public ResponseEntity<IncomeDto> createIncome(@Valid @RequestBody IncomeDto dto, Authentication authentication) {
+        Long userId = Long.valueOf(authentication.getName());
+        Income saved = incomeService.create(dto, userId);
+        return ResponseEntity.ok(mapper.toIncomeDto(saved));
     }
 
-    @PostMapping
-    public ResponseEntity<?> create(@RequestBody Map<String, Object> dto, Authentication authentication) {
-        try {
-            Long userId = Long.valueOf(authentication.getName());
-            // Extraer campos del JSON como Map
-            String typeStr = (String) dto.get("type");
-            if (typeStr == null) {
-                throw new IllegalArgumentException("Type is required");
-            }
-            Double amount = ((Number) dto.get("amount")).doubleValue();
-            Long categoryId = ((Number) dto.get("categoryId")).longValue();
-            String description = (String) dto.get("description");
-
-            // Validar y obtener category
-            Optional<Category> categoryOpt = categoryRepository.findById(categoryId);
-            Category category = categoryOpt.orElseThrow(() -> new IllegalArgumentException("Category not found with ID: " + categoryId));
-            TransactionType type = TransactionType.valueOf(typeStr.toUpperCase());
-
-            Transaction transaction = Transaction.builder()
-                    .userId(userId)
-                    .type(type)
-                    .amount(amount)
-                    .category(category)
-                    .description(description)
-                    .date(LocalDateTime.now())
-                    .build();
-            Transaction saved = transactionService.create(transaction);
-            return ResponseEntity.ok(new TransactionDto(saved.getId(), saved.getType(), saved.getAmount(), saved.getDate(), saved.getCategory().getId(), saved.getDescription()));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Invalid request data: " + e.getMessage()));
-        }
+    @PostMapping("/expenses")
+    public ResponseEntity<ExpenseDto> createExpense(@Valid @RequestBody ExpenseDto dto, Authentication authentication) {
+        Long userId = Long.valueOf(authentication.getName());
+        Expense saved = expenseService.create(dto, userId);
+        return ResponseEntity.ok(mapper.toExpenseDto(saved));
     }
 
     @GetMapping
     public ResponseEntity<List<TransactionDto>> getAll(Authentication authentication) {
         Long userId = Long.valueOf(authentication.getName());
-        return ResponseEntity.ok(transactionService.findByUserId(userId));
+        return ResponseEntity.ok(reportService.findAllByUserId(userId));
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> delete(@PathVariable Long id, Authentication authentication) {
+    @DeleteMapping("/incomes/{id}")
+    public ResponseEntity<?> deleteIncome(@PathVariable Long id, Authentication authentication) {
         Long userId = Long.valueOf(authentication.getName());
-        transactionService.delete(id);
+        incomeService.delete(id, userId);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/expenses/{id}")
+    public ResponseEntity<?> deleteExpense(@PathVariable Long id, Authentication authentication) {
+        Long userId = Long.valueOf(authentication.getName());
+        expenseService.delete(id, userId);
         return ResponseEntity.ok().build();
     }
 
@@ -78,8 +65,8 @@ public class TransactionController {
     public ResponseEntity<?> getReports(Authentication authentication) {
         Long userId = Long.valueOf(authentication.getName());
         return ResponseEntity.ok(Map.of(
-                "totalIncome", transactionService.getTotalIncome(userId),
-                "totalExpense", transactionService.getTotalExpense(userId)
+                "totalIncome", reportService.getTotalIncome(userId),
+                "totalExpense", reportService.getTotalExpense(userId)
         ));
     }
 }

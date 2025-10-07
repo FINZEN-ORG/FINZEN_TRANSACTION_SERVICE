@@ -3,12 +3,12 @@ package eci.ieti.FinzenTransactionService.controller;
 import eci.ieti.FinzenTransactionService.dto.CategoryDto;
 import eci.ieti.FinzenTransactionService.model.Category;
 import eci.ieti.FinzenTransactionService.service.CategoryService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/categories")
@@ -27,13 +27,9 @@ public class CategoryController {
     }
 
     @PostMapping
-    public ResponseEntity<CategoryDto> createCustomCategory(@RequestBody Map<String, String> request, Authentication authentication) {
+    public ResponseEntity<CategoryDto> createCustomCategory(@Valid @RequestBody CategoryDto dto, Authentication authentication) {
         Long userId = Long.valueOf(authentication.getName());
-        String name = request.get("name");
-        if (name == null || name.trim().isEmpty()) {
-            return ResponseEntity.badRequest().build();
-        }
-        Category category = categoryService.createCustomCategory(userId, name);
-        return ResponseEntity.ok(new CategoryDto(category.getId(), category.getName(), category.isPredefined()));
+        Category saved = categoryService.createCustomCategory(userId, dto);
+        return ResponseEntity.ok(new CategoryDto(saved.getId(), saved.getName(), saved.isPredefined()));
     }
 }
