@@ -4,34 +4,34 @@ import eci.ieti.FinzenTransactionService.dto.*;
 import eci.ieti.FinzenTransactionService.model.*;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingConstants;
-import org.mapstruct.factory.Mappers;
 
 import java.util.List;
 
-@Mapper(componentModel = "spring", uses = {CategoryMapper.class}) // Usa sub-mappers si crecen
-public interface TransactionMapper { // Mapper principal, pero lo renombramos implícitamente
-    TransactionMapper INSTANCE = Mappers.getMapper(TransactionMapper.class);
+@Mapper(componentModel = "spring")
+public interface TransactionMapper {
 
-    // Para Income (nuevo)
-    Income toIncome(CreateIncomeDto dto);
+    // Income
     IncomeDto toIncomeDto(Income entity);
     List<IncomeDto> toIncomeDtos(List<Income> entities);
+    Income toIncome(IncomeDto dto);
 
-    // Para Expense (nuevo)
-    Expense toExpense(CreateExpenseDto dto);
+    // Expense
     ExpenseDto toExpenseDto(Expense entity);
     List<ExpenseDto> toExpenseDtos(List<Expense> entities);
+    Expense toExpense(ExpenseDto dto);
 
-    // Legacy para reports (combina Income+Expense como "Transaction")
-    TransactionDto toTransactionDto(Income income); // Mapea fields comunes
-    TransactionDto toTransactionDto(Expense expense);
-    List<TransactionDto> toTransactionDtos(List<Income> incomes, List<Expense> expenses); // Combina
-
-    // Budget (existente)
-    Budget toBudget(CreateBudgetDto dto); // Nuevo DTO de entrada
+    // Budget
     BudgetDto toBudgetDto(Budget entity);
+    List<BudgetDto> toBudgetDtos(List<Budget> entities);
+    Budget toBudget(BudgetDto dto);
 
-    // Category (existente)
-    Category toCategory(CreateCategoryDto dto); // Nuevo DTO
+    // Category
     CategoryDto toCategoryDto(Category entity);
+    List<CategoryDto> toCategoryDtos(List<Category> entities);
+    Category toCategory(CategoryDto dto);
+
+    // Legacy reports: Combina en TransactionDto con type
+    TransactionDto toTransactionDto(Income income);
+    TransactionDto toTransactionDto(Expense expense);
+    List<TransactionDto> toTransactionDtos(List<Income> incomes, List<Expense> expenses);
 }
