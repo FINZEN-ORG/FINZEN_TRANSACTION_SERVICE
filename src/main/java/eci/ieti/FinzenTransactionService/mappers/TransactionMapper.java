@@ -3,8 +3,6 @@ package eci.ieti.FinzenTransactionService.mappers;
 import eci.ieti.FinzenTransactionService.dto.*;
 import eci.ieti.FinzenTransactionService.model.*;
 import org.mapstruct.Mapper;
-import org.mapstruct.MappingConstants;
-
 import java.util.List;
 
 @Mapper(componentModel = "spring")
@@ -33,5 +31,23 @@ public interface TransactionMapper {
     // Legacy reports: Combina en TransactionDto con type
     TransactionDto toTransactionDto(Income income);
     TransactionDto toTransactionDto(Expense expense);
-    List<TransactionDto> toTransactionDtos(List<Income> incomes, List<Expense> expenses);
+
+    default List<TransactionDto> toTransactionDtos(List<Income> incomes, List<Expense> expenses) {
+        List<TransactionDto> result = new java.util.ArrayList<>();
+        if (incomes != null) {
+            for (Income i : incomes) {
+                TransactionDto dto = toTransactionDto(i);
+                dto.setType(TransactionType.INCOME);
+                result.add(dto);
+            }
+        }
+        if (expenses != null) {
+            for (Expense e : expenses) {
+                TransactionDto dto = toTransactionDto(e);
+                dto.setType(TransactionType.EXPENSE);
+                result.add(dto);
+            }
+        }
+        return result;
+    }
 }
