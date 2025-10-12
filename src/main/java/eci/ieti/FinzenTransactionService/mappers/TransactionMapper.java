@@ -37,14 +37,14 @@ public interface TransactionMapper {
         if (incomes != null) {
             for (Income i : incomes) {
                 TransactionDto dto = toTransactionDto(i);
-                dto.setType(TransactionType.INCOME);
+                dto.setType("INCOME");
                 result.add(dto);
             }
         }
         if (expenses != null) {
             for (Expense e : expenses) {
                 TransactionDto dto = toTransactionDto(e);
-                dto.setType(TransactionType.EXPENSE);
+                dto.setType("EXPENSE");
                 result.add(dto);
             }
         }

@@ -10,11 +10,11 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class ExpenseDto {
     private Long id;
-    @NotNull @Min(value = 0)
+    @NotNull(message = "Amount is required") @Min(value = 0)
     private Double amount;
     private String description;
-    private LocalDateTime date;
-    @NotNull
+    @NotNull(message = "CategoryId is required")
     private Long categoryId;
+    private LocalDateTime date;
     private LocalDateTime createdAt;
 }
