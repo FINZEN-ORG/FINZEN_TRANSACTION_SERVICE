@@ -2,51 +2,85 @@ package eci.ieti.FinzenTransactionService.mappers;
 
 import eci.ieti.FinzenTransactionService.dto.*;
 import eci.ieti.FinzenTransactionService.model.*;
-import org.mapstruct.Mapper;
+import org.mapstruct.*;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Mapper(componentModel = "spring")
 public interface TransactionMapper {
 
-    // Income
+    // ===== INCOME MAPPINGS =====
+
+    @Mapping(source = "category.id", target = "categoryId")
     IncomeDto toIncomeDto(Income entity);
+
     List<IncomeDto> toIncomeDtos(List<Income> entities);
+
+    @Mapping(target = "category", ignore = true)
+    @Mapping(target = "userId", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     Income toIncome(IncomeDto dto);
 
-    // Expense
+    // ===== EXPENSE MAPPINGS =====
+
+    @Mapping(source = "category.id", target = "categoryId")
     ExpenseDto toExpenseDto(Expense entity);
+
     List<ExpenseDto> toExpenseDtos(List<Expense> entities);
+
+    @Mapping(target = "category", ignore = true)
+    @Mapping(target = "userId", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     Expense toExpense(ExpenseDto dto);
 
-    // Budget
+    // ===== BUDGET MAPPINGS =====
+
+    @Mapping(source = "category.id", target = "categoryId")
     BudgetDto toBudgetDto(Budget entity);
+
     List<BudgetDto> toBudgetDtos(List<Budget> entities);
+
+    @Mapping(target = "category", ignore = true)
+    @Mapping(target = "userId", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     Budget toBudget(BudgetDto dto);
 
-    // Category
+    // ===== CATEGORY MAPPINGS =====
+
     CategoryDto toCategoryDto(Category entity);
+
     List<CategoryDto> toCategoryDtos(List<Category> entities);
+
+    @Mapping(target = "userId", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     Category toCategory(CategoryDto dto);
 
-    // Legacy reports: Combina en TransactionDto con type
+    // ===== TRANSACTION DTO MAPPINGS (for reports) =====
+
+    @Mapping(source = "category.id", target = "categoryId")
+    @Mapping(target = "type", constant = "INCOME")
     TransactionDto toTransactionDto(Income income);
+
+    @Mapping(source = "category.id", target = "categoryId")
+    @Mapping(target = "type", constant = "EXPENSE")
     TransactionDto toTransactionDto(Expense expense);
 
+    // Método default para combinar incomes y expenses
     default List<TransactionDto> toTransactionDtos(List<Income> incomes, List<Expense> expenses) {
         List<TransactionDto> result = new java.util.ArrayList<>();
         if (incomes != null) {
-            for (Income i : incomes) {
-                TransactionDto dto = toTransactionDto(i);
-                dto.setType("INCOME");
-                result.add(dto);
-            }
+            result.addAll(incomes.stream()
+                    .map(this::toTransactionDto)
+                    .collect(Collectors.toList()));
         }
         if (expenses != null) {
-            for (Expense e : expenses) {
-                TransactionDto dto = toTransactionDto(e);
-                dto.setType("EXPENSE");
-                result.add(dto);
-            }
+            result.addAll(expenses.stream()
+                    .map(this::toTransactionDto)
+                    .collect(Collectors.toList()));
         }
         return result;
     }

@@ -21,6 +21,7 @@ import java.util.Map;
 @RequestMapping("/api/transactions")
 @RequiredArgsConstructor
 public class TransactionController {
+
     private final IncomeService incomeService;
     private final ExpenseService expenseService;
     private final ReportService reportService;
@@ -29,6 +30,7 @@ public class TransactionController {
     @PostMapping("/incomes")
     public ResponseEntity<IncomeDto> createIncome(@Valid @RequestBody IncomeDto dto, Authentication authentication) {
         Long userId = Long.valueOf(authentication.getName());
+        System.out.println("Creating income for user: " + userId + " | Data: " + dto);
         Income saved = incomeService.create(dto, userId);
         return ResponseEntity.ok(mapper.toIncomeDto(saved));
     }
@@ -36,6 +38,7 @@ public class TransactionController {
     @PostMapping("/expenses")
     public ResponseEntity<ExpenseDto> createExpense(@Valid @RequestBody ExpenseDto dto, Authentication authentication) {
         Long userId = Long.valueOf(authentication.getName());
+        System.out.println("Creating expense for user: " + userId + " | Data: " + dto);
         Expense saved = expenseService.create(dto, userId);
         return ResponseEntity.ok(mapper.toExpenseDto(saved));
     }
