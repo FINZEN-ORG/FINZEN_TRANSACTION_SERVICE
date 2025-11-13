@@ -1,4 +1,4 @@
-name: Build, Push, and Deploy User Service
+name: Build, Push, and Deploy Transaction Service
 
 on:
   push:
@@ -14,8 +14,8 @@ jobs:
     env:
       AZURE_RG: finzen-rg
       ACR_SERVER: finzenacr.azurecr.io
-      CA_NAME: finzen-api-users
-      IMAGE_REPO: api-users
+      CA_NAME: finzen-api-transactions
+      IMAGE_REPO: api-transactions
       
     steps:
       - name: Checkout code
@@ -35,23 +35,20 @@ jobs:
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
-          
-      - name: 2. ACR Build and Push
-        uses: azure/acr-build-push@v6
-        with:
-          context: .
-          file: Dockerfile
-          registry: ${{ env.ACR_SERVER }}
-          repository: ${{ env.IMAGE_REPO }}
-          tags: latest
 
-      - name: 3. Deploy/Update Container App
+      - name: 2. Docker Build
+        run: docker build -t ${{ env.ACR_SERVER }}/${{ env.IMAGE_REPO }}:latest . 
+      
+      - name: 3. Docker Push
+        run: docker push ${{ env.ACR_SERVER }}/${{ env.IMAGE_REPO }}:latest
+      
+      - name: 4. Deploy/Update Container App
         uses: azure/container-apps-deploy-action@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
           container-app-name: ${{ env.CA_NAME }}
           resource-group: ${{ env.AZURE_RG }}
-          image: ${{ env.ACR_SERVER }}/${{ env.IMAGE_REPO }}:latest 
+          image: ${{ env.ACR_SERVER }}/${{ env.IMAGE_REPO }}:latest
           
       - name: Deployment Success
-        run: echo "Microservicio de Usuarios desplegado exitosamente."
+        run: echo "Microservicio de Transacciones desplegado exitosamente."
