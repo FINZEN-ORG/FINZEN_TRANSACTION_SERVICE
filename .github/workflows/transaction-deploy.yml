@@ -40,8 +40,8 @@ jobs:
         uses: azure/docker-login@v1
         with:
           login-server: ${{ env.ACR_SERVER }}
-          username: ${{ secrets.AZURE_CREDENTIALS.clientId }}
-          password: ${{ secrets.AZURE_CREDENTIALS.clientSecret }}
+          username: ${{ fromJson(secrets.AZURE_CREDENTIALS).clientId }}
+          password: ${{ fromJson(secrets.AZURE_CREDENTIALS).clientSecret }}
 
       - name: 3. Docker Build
         run: docker build -t ${{ env.ACR_SERVER }}/${{ env.IMAGE_REPO }}:latest .
