@@ -4,6 +4,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
@@ -11,7 +12,7 @@ import java.time.LocalDateTime;
 public class ExpenseDto {
     private Long id;
     @NotNull(message = "Amount is required") @Min(value = 0)
-    private Double amount;
+    private BigDecimal amount;
     private String description;
     @NotNull(message = "CategoryId is required")
     private Long categoryId;

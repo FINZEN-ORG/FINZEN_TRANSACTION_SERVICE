@@ -8,9 +8,7 @@ import lombok.Data;
 @AllArgsConstructor
 public class CategoryDto {
     private Long id;
-
     @NotBlank(message = "Name is required")
     private String name;
-
     private boolean predefined;
 }

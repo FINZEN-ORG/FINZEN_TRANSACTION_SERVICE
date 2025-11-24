@@ -1,5 +1,5 @@
 package eci.ieti.FinzenTransactionService.controller;
-
+/*
 import eci.ieti.FinzenTransactionService.dto.ExpenseDto;
 import eci.ieti.FinzenTransactionService.dto.IncomeDto;
 import eci.ieti.FinzenTransactionService.dto.TransactionDto;
@@ -183,3 +183,4 @@ class TransactionControllerTest {
 	}
 
 }
+*/

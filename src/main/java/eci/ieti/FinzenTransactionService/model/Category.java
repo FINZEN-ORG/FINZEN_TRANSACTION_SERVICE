@@ -10,7 +10,9 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "categories")
+@Table(name = "categories", indexes = {
+        @Index(columnList = "userId,name", name = "idx_user_category_name")
+})
 @Getter
 @Setter(AccessLevel.PUBLIC)
 @NoArgsConstructor
@@ -18,20 +20,15 @@ public class Category {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
     @Column(nullable = false)
-    private Long userId;  // 0 para categorias predefinidas globales
-
-    @Column(nullable = false, unique = true)
+    private Long userId;
+    @Column(nullable = false)
     private String name;
-
     @Column(nullable = false)
     private boolean predefined = false;
-
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime createdAt;
-
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 }
