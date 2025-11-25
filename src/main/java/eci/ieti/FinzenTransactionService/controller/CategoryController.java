@@ -19,15 +19,15 @@ public class CategoryController {
     }
 
     @GetMapping
-    public ResponseEntity<List<CategoryDto>> getAll(Authentication authentication) {
+    public ResponseEntity<List<CategoryDto>> getAll(@RequestParam(defaultValue = "EXPENSE") String type, Authentication authentication) {
         Long userId = Long.valueOf(authentication.getName());
-        return ResponseEntity.ok(categoryService.findByUserId(userId));
+        return ResponseEntity.ok(categoryService.findByUserIdAndType(userId, type));
     }
 
     @PostMapping
     public ResponseEntity<CategoryDto> createCustomCategory(@Valid @RequestBody CategoryDto dto, Authentication authentication) {
         Long userId = Long.valueOf(authentication.getName());
         Category saved = categoryService.createCustomCategory(userId, dto);
-        return ResponseEntity.ok(new CategoryDto(saved.getId(), saved.getName(), saved.isPredefined()));
+        return ResponseEntity.ok(new CategoryDto(saved.getId(), saved.getName(), saved.getType(), saved.isPredefined()));
     }
 }

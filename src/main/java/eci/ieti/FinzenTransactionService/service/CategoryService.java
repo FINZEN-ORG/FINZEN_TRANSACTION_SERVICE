@@ -18,17 +18,23 @@ public class CategoryService {
         return categoryRepository.save(category);
     }
 
-    public List<CategoryDto> findByUserId(Long userId) {
-        return mapper.toCategoryDtos(categoryRepository.findByUserIdOrPredefined(userId, true));
+    public List<CategoryDto> findByUserIdAndType(Long userId, String type) {
+        // Busca las del usuario O las predefinidas (userId=0) que coincidan con el tipo
+        return mapper.toCategoryDtos(
+                categoryRepository.findByUserIdAndTypeOrUserIdAndType(userId, type, 0L, type)
+        );
     }
 
     public Category createCustomCategory(Long userId, CategoryDto dto) {
-        if (categoryRepository.findByUserIdAndName(userId, dto.getName()).isPresent()) {
-            throw new IllegalArgumentException("Category name already exists for this user");
+        // Validar duplicados por nombre y tipo
+        if (categoryRepository.findByUserIdAndNameAndType(userId, dto.getName(), dto.getType()).isPresent()) {
+            throw new IllegalArgumentException("Category already exists");
         }
         Category category = mapper.toCategory(dto);
         category.setUserId(userId);
         category.setPredefined(false);
+        category.setType(dto.getType());
+        category.setIcon(dto.getIcon());
         return categoryRepository.save(category);
     }
 }

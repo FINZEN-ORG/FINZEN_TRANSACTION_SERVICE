@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "categories", indexes = {
-        @Index(columnList = "userId,name", name = "idx_user_category_name")
+        @Index(columnList = "userId,name,type", name = "idx_user_category_name_type")
 })
 @Getter
 @Setter(AccessLevel.PUBLIC)
@@ -24,6 +24,10 @@ public class Category {
     private Long userId;
     @Column(nullable = false)
     private String name;
+    @Column(nullable = false)
+    private String type; // VALORES: "INCOME" o "EXPENSE"
+    @Column(nullable = false)
+    private String icon;
     @Column(nullable = false)
     private boolean predefined = false;
     @CreationTimestamp
