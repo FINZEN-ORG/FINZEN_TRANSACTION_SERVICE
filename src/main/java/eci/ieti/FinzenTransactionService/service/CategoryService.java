@@ -1,6 +1,7 @@
 package eci.ieti.FinzenTransactionService.service;
 
 import eci.ieti.FinzenTransactionService.dto.CategoryDto;
+import eci.ieti.FinzenTransactionService.exceptions.EntityNotFoundException;
 import eci.ieti.FinzenTransactionService.mappers.TransactionMapper;
 import eci.ieti.FinzenTransactionService.model.Category;
 import eci.ieti.FinzenTransactionService.repository.CategoryRepository;
@@ -26,9 +27,12 @@ public class CategoryService {
     }
 
     public Category createCustomCategory(Long userId, CategoryDto dto) {
-        // Validar duplicados por nombre y tipo
-        if (categoryRepository.findByUserIdAndNameAndType(userId, dto.getName(), dto.getType()).isPresent()) {
-            throw new IllegalArgumentException("Category already exists");
+        // 1. Verificar si ya existe una categoría con ese nombre y tipo para este usuario
+        boolean existsUser = categoryRepository.findByUserIdAndNameAndType(userId, dto.getName(), dto.getType()).isPresent();
+        // 2. Verificar si es un nombre reservado del sistema (userId = 0)
+        boolean existsSystem = categoryRepository.findByUserIdAndNameAndType(0L, dto.getName(), dto.getType()).isPresent();
+        if (existsUser || existsSystem) {
+            throw new IllegalArgumentException("Ya existe una categoría con el nombre '" + dto.getName() + "'");
         }
         Category category = mapper.toCategory(dto);
         category.setUserId(userId);
@@ -36,5 +40,19 @@ public class CategoryService {
         category.setType(dto.getType());
         category.setIcon(dto.getIcon());
         return categoryRepository.save(category);
+    }
+
+    public void delete(Long id, Long userId) {
+        Category category = categoryRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Category not found"));
+        // Validar propiedad
+        if (!category.getUserId().equals(userId) && category.getUserId() != 0L) {
+            throw new RuntimeException("Unauthorized");
+        }
+        // VALIDACIÓN DE ORO: No borrar predefinidas
+        if (category.isPredefined()) {
+            throw new IllegalArgumentException("No puedes eliminar categorías predefinidas del sistema.");
+        }
+        categoryRepository.delete(category);
     }
 }

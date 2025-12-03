@@ -30,4 +30,11 @@ public class CategoryController {
         Category saved = categoryService.createCustomCategory(userId, dto);
         return ResponseEntity.ok(new CategoryDto(saved.getId(), saved.getName(), saved.getType(), saved.getIcon(),saved.isPredefined()));
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Long id, Authentication authentication) {
+        Long userId = Long.valueOf(authentication.getName());
+        categoryService.delete(id, userId);
+        return ResponseEntity.ok().build();
+    }
 }
