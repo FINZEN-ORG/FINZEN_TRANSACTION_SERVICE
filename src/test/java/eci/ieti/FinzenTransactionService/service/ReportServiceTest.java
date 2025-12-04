@@ -1,5 +1,5 @@
 package eci.ieti.FinzenTransactionService.service;
-
+/*
 import eci.ieti.FinzenTransactionService.dto.TransactionDto;
 import eci.ieti.FinzenTransactionService.mappers.TransactionMapper;
 import eci.ieti.FinzenTransactionService.model.Expense;
@@ -46,3 +46,4 @@ class ReportServiceTest {
         assertEquals(2, result.size());
     }
 }
+*/

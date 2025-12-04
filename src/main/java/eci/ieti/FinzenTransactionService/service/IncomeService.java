@@ -12,7 +12,7 @@ import eci.ieti.FinzenTransactionService.repository.IncomeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -20,7 +20,6 @@ import java.util.List;
 @RequiredArgsConstructor
 @Transactional
 public class IncomeService {
-
     private final IncomeRepository incomeRepository;
     private final CategoryRepository categoryRepository;
     private final TransactionMapper mapper;
@@ -42,7 +41,7 @@ public class IncomeService {
         return mapper.toIncomeDtos(incomeRepository.findByUserId(userId));
     }
 
-    public Double getTotalIncome(Long userId) {
+    public BigDecimal getTotalIncome(Long userId) {
         return incomeRepository.sumByUserId(userId);
     }
 

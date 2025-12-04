@@ -7,13 +7,11 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/categories")
 public class CategoryController {
-
     private final CategoryService categoryService;
 
     public CategoryController(CategoryService categoryService) {
@@ -21,15 +19,22 @@ public class CategoryController {
     }
 
     @GetMapping
-    public ResponseEntity<List<CategoryDto>> getAll(Authentication authentication) {
+    public ResponseEntity<List<CategoryDto>> getAll(@RequestParam(defaultValue = "EXPENSE") String type, Authentication authentication) {
         Long userId = Long.valueOf(authentication.getName());
-        return ResponseEntity.ok(categoryService.findByUserId(userId));
+        return ResponseEntity.ok(categoryService.findByUserIdAndType(userId, type));
     }
 
     @PostMapping
     public ResponseEntity<CategoryDto> createCustomCategory(@Valid @RequestBody CategoryDto dto, Authentication authentication) {
         Long userId = Long.valueOf(authentication.getName());
         Category saved = categoryService.createCustomCategory(userId, dto);
-        return ResponseEntity.ok(new CategoryDto(saved.getId(), saved.getName(), saved.isPredefined()));
+        return ResponseEntity.ok(new CategoryDto(saved.getId(), saved.getName(), saved.getType(), saved.getIcon(),saved.isPredefined()));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Long id, Authentication authentication) {
+        Long userId = Long.valueOf(authentication.getName());
+        categoryService.delete(id, userId);
+        return ResponseEntity.ok().build();
     }
 }

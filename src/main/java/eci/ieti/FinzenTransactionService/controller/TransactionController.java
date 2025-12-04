@@ -1,5 +1,6 @@
 package eci.ieti.FinzenTransactionService.controller;
 
+import eci.ieti.FinzenTransactionService.dto.CategoryTotalDto;
 import eci.ieti.FinzenTransactionService.dto.ExpenseDto;
 import eci.ieti.FinzenTransactionService.dto.IncomeDto;
 import eci.ieti.FinzenTransactionService.dto.TransactionDto;
@@ -9,11 +10,13 @@ import eci.ieti.FinzenTransactionService.model.Income;
 import eci.ieti.FinzenTransactionService.service.ExpenseService;
 import eci.ieti.FinzenTransactionService.service.IncomeService;
 import eci.ieti.FinzenTransactionService.service.ReportService;
+import org.springframework.format.annotation.DateTimeFormat;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -70,5 +73,15 @@ public class TransactionController {
                 "totalIncome", reportService.getTotalIncome(userId),
                 "totalExpense", reportService.getTotalExpense(userId)
         ));
+    }
+
+    @GetMapping("/summary")
+    public ResponseEntity<List<CategoryTotalDto>> getExpensesSummary(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
+            Authentication authentication
+    ) {
+        Long userId = Long.valueOf(authentication.getName());
+        return ResponseEntity.ok(expenseService.getCategorySummaries(userId, startDate, endDate));
     }
 }

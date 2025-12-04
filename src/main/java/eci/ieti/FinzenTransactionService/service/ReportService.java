@@ -6,13 +6,12 @@ import eci.ieti.FinzenTransactionService.model.Expense;
 import eci.ieti.FinzenTransactionService.model.Income;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
+import java.math.BigDecimal;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class ReportService {
-
     private final IncomeService incomeService;
     private final ExpenseService expenseService;
     private final TransactionMapper mapper;
@@ -23,11 +22,11 @@ public class ReportService {
         return mapper.toTransactionDtos(incomes, expenses);
     }
 
-    public Double getTotalIncome(Long userId) {
+    public BigDecimal getTotalIncome(Long userId) {
         return incomeService.getTotalIncome(userId);
     }
 
-    public Double getTotalExpense(Long userId) {
+    public BigDecimal getTotalExpense(Long userId) {
         return expenseService.getTotalExpense(userId);
     }
 }

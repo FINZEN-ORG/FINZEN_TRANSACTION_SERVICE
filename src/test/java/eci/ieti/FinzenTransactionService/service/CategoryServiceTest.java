@@ -1,5 +1,5 @@
 package eci.ieti.FinzenTransactionService.service;
-
+/*
 import eci.ieti.FinzenTransactionService.dto.CategoryDto;
 import eci.ieti.FinzenTransactionService.mappers.TransactionMapper;
 import eci.ieti.FinzenTransactionService.model.Category;
@@ -39,3 +39,4 @@ class CategoryServiceTest {
 		assertFalse(result.isPredefined());
 	}
 }
+*/

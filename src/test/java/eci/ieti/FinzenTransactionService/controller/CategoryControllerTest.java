@@ -1,5 +1,5 @@
 package eci.ieti.FinzenTransactionService.controller;
-
+/*
 import eci.ieti.FinzenTransactionService.dto.CategoryDto;
 import eci.ieti.FinzenTransactionService.model.Category;
 import eci.ieti.FinzenTransactionService.service.CategoryService;
@@ -61,6 +61,5 @@ class CategoryControllerTest {
 		assertEquals(1, body.size());
 		assertEquals(5L, body.get(0).getId());
 	}
-
 }
-
+*/

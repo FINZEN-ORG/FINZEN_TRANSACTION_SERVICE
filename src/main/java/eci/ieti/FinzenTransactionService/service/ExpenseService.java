@@ -1,5 +1,6 @@
 package eci.ieti.FinzenTransactionService.service;
 
+import eci.ieti.FinzenTransactionService.dto.CategoryTotalDto;
 import eci.ieti.FinzenTransactionService.dto.ExpenseDto;
 import eci.ieti.FinzenTransactionService.exceptions.category.CategoryNotFoundException;
 import eci.ieti.FinzenTransactionService.exceptions.expense.ExpenseNotFoundException;
@@ -12,6 +13,7 @@ import eci.ieti.FinzenTransactionService.repository.ExpenseRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -19,10 +21,8 @@ import java.util.List;
 @RequiredArgsConstructor
 @Transactional
 public class ExpenseService {
-
     private final ExpenseRepository expenseRepository;
     private final CategoryRepository categoryRepository;
-    private final BudgetService budgetService;
     private final TransactionMapper mapper;
 
     public Expense create(ExpenseDto dto, Long userId) {
@@ -32,16 +32,9 @@ public class ExpenseService {
         expense.setUserId(userId);
         expense.setDate(LocalDateTime.now());
         expense.setCategory(category);
-        Expense saved = expenseRepository.save(expense);
-        // CAMBIO: Solo actualizar budget si existe (no lanzar excepción)
-        try {
-            budgetService.updateBudgetOnExpense(userId, dto.getCategoryId(), dto.getAmount());
-        } catch (Exception e) {
-            // Si no existe budget, simplemente continuar sin error
-            System.out.println("No budget found for category " + dto.getCategoryId() + ", skipping budget update");
-        }
-        return saved;
+        return expenseRepository.save(expense);
     }
+
     public List<Expense> getExpensesByUserId(Long userId) {
         return expenseRepository.findByUserId(userId);
     }
@@ -50,8 +43,12 @@ public class ExpenseService {
         return mapper.toExpenseDtos(expenseRepository.findByUserId(userId));
     }
 
-    public Double getTotalExpense(Long userId) {
+    public BigDecimal getTotalExpense(Long userId) {
         return expenseRepository.sumByUserId(userId);
+    }
+
+    public List<CategoryTotalDto> getCategorySummaries(Long userId, LocalDateTime startDate, LocalDateTime endDate) {
+        return expenseRepository.sumExpensesByCategoryAndDateRange(userId, startDate, endDate);
     }
 
     public void delete(Long id, Long userId) {
