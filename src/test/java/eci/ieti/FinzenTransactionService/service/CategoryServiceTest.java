@@ -96,4 +96,76 @@ class CategoryServiceTest {
         });
         assertEquals("Category not found", exception.getMessage());
     }
+
+    @Test
+    void testDeleteCategory_WrongUser() {
+        when(categoryRepository.findById(1L)).thenReturn(Optional.of(testCategory));
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            categoryService.delete(1L, 999L);
+        });
+        assertEquals("Unauthorized", exception.getMessage());
+        verify(categoryRepository, never()).delete(any());
+    }
+
+    @Test
+    void testDeleteCategory_Predefined() {
+        testCategory.setPredefined(true);
+        when(categoryRepository.findById(1L)).thenReturn(Optional.of(testCategory));
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            categoryService.delete(1L, USER_ID);
+        });
+        assertEquals("No puedes eliminar categorías predefinidas del sistema.", exception.getMessage());
+        verify(categoryRepository, never()).delete(any());
+    }
+
+    @Test
+    void testCreateCustomCategory_Success() {
+        testCategory.setPredefined(false);
+        when(categoryRepository.findByUserIdAndNameAndType(USER_ID, "Test Category", "EXPENSE"))
+                .thenReturn(Optional.empty());
+        when(categoryRepository.findByUserIdAndNameAndType(SYSTEM_ID, "Test Category", "EXPENSE"))
+                .thenReturn(Optional.empty());
+        when(mapper.toCategory(testCategoryDto)).thenReturn(testCategory);
+        when(categoryRepository.save(any(Category.class))).thenReturn(testCategory);
+        Category result = categoryService.createCustomCategory(USER_ID, testCategoryDto);
+        assertNotNull(result);
+        assertEquals("Test Category", result.getName());
+        assertFalse(result.isPredefined());
+        verify(categoryRepository, times(1)).save(any(Category.class));
+    }
+
+    @Test
+    void testCreateCustomCategory_DuplicateUserCategory() {
+        when(categoryRepository.findByUserIdAndNameAndType(USER_ID, "Test Category", "EXPENSE"))
+                .thenReturn(Optional.of(testCategory));
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            categoryService.createCustomCategory(USER_ID, testCategoryDto);
+        });
+        assertEquals("Ya existe una categoría con el nombre 'Test Category'", exception.getMessage());
+        verify(categoryRepository, never()).save(any());
+    }
+
+    @Test
+    void testCreateCustomCategory_DuplicateSystemCategory() {
+        when(categoryRepository.findByUserIdAndNameAndType(USER_ID, "Test Category", "EXPENSE"))
+                .thenReturn(Optional.empty());
+        when(categoryRepository.findByUserIdAndNameAndType(SYSTEM_ID, "Test Category", "EXPENSE"))
+                .thenReturn(Optional.of(testCategory));
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            categoryService.createCustomCategory(USER_ID, testCategoryDto);
+        });
+        assertEquals("Ya existe una categoría con el nombre 'Test Category'", exception.getMessage());
+        verify(categoryRepository, never()).save(any());
+    }
+
+    @Test
+    void testFindByUserIdAndType_ReturnsEmpty() {
+        when(categoryRepository.findByUserIdAndTypeOrUserIdAndType(
+                eq(USER_ID), eq("INCOME"), eq(SYSTEM_ID), eq("INCOME")))
+                .thenReturn(Arrays.asList());
+        when(mapper.toCategoryDtos(Arrays.asList())).thenReturn(Arrays.asList());
+        List<CategoryDto> result = categoryService.findByUserIdAndType(USER_ID, "INCOME");
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
 }

@@ -111,4 +111,83 @@ class IncomeServiceTest {
         assertNotNull(result);
         assertEquals(1, result.size());
     }
+
+    @Test
+    void testFindByUserId() {
+        // Arrange
+        List<Income> incomes = Arrays.asList(testIncome);
+        List<IncomeDto> incomeDtos = Arrays.asList(testIncomeDto);
+        when(incomeRepository.findByUserId(USER_ID)).thenReturn(incomes);
+        when(mapper.toIncomeDtos(incomes)).thenReturn(incomeDtos);
+
+        // Act
+        List<IncomeDto> result = incomeService.findByUserId(USER_ID);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        verify(mapper, times(1)).toIncomeDtos(incomes);
+    }
+
+    @Test
+    void testGetTotalIncome() {
+        // Arrange
+        BigDecimal total = new BigDecimal("5000.00");
+        when(incomeRepository.sumByUserId(USER_ID)).thenReturn(total);
+
+        // Act
+        BigDecimal result = incomeService.getTotalIncome(USER_ID);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(total, result);
+    }
+
+    @Test
+    void testDelete_Success() {
+        // Arrange
+        when(incomeRepository.findById(1L)).thenReturn(Optional.of(testIncome));
+        doNothing().when(incomeRepository).delete(testIncome);
+
+        // Act
+        incomeService.delete(1L, USER_ID);
+
+        // Assert
+        verify(incomeRepository, times(1)).delete(testIncome);
+    }
+
+    @Test
+    void testDelete_IncomeNotFound() {
+        // Arrange
+        when(incomeRepository.findById(1L)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThrows(IncomeNotFoundException.class, () -> {
+            incomeService.delete(1L, USER_ID);
+        });
+    }
+
+    @Test
+    void testDelete_WrongUser() {
+        // Arrange
+        testIncome.setUserId(999L); // Different user
+        when(incomeRepository.findById(1L)).thenReturn(Optional.of(testIncome));
+
+        // Act & Assert
+        assertThrows(IncomeNotFoundException.class, () -> {
+            incomeService.delete(1L, USER_ID);
+        });
+    }
+
+    @Test
+    void testDelete_ExpiredPeriod() {
+        // Arrange
+        testIncome.setCreatedAt(LocalDateTime.now().minusHours(25)); // More than 24 hours
+        when(incomeRepository.findById(1L)).thenReturn(Optional.of(testIncome));
+
+        // Act & Assert
+        assertThrows(Exception.class, () -> {
+            incomeService.delete(1L, USER_ID);
+        });
+    }
 }

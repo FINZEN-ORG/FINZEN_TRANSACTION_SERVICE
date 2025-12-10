@@ -129,4 +129,78 @@ class ReportServiceTest {
         assertNotNull(result);
         assertTrue(result.isEmpty());
     }
+
+    @Test
+    void testFindAllByUserId_OnlyIncomes() {
+        // Arrange
+        List<Income> incomes = Arrays.asList(testIncome);
+        List<TransactionDto> transactionDtos = Arrays.asList(testTransactionDto);
+
+        when(incomeService.getIncomesByUserId(USER_ID)).thenReturn(incomes);
+        when(expenseService.getExpensesByUserId(USER_ID)).thenReturn(Arrays.asList());
+        when(mapper.toTransactionDtos(incomes, Arrays.asList())).thenReturn(transactionDtos);
+
+        // Act
+        List<TransactionDto> result = reportService.findAllByUserId(USER_ID);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        verify(incomeService, times(1)).getIncomesByUserId(USER_ID);
+        verify(expenseService, times(1)).getExpensesByUserId(USER_ID);
+    }
+
+    @Test
+    void testFindAllByUserId_OnlyExpenses() {
+        // Arrange
+        List<Expense> expenses = Arrays.asList(testExpense);
+        TransactionDto expenseDto = new TransactionDto(
+                2L,
+                new BigDecimal("500.00"),
+                "Rent",
+                1L,
+                LocalDateTime.now(),
+                "EXPENSE"
+        );
+        List<TransactionDto> transactionDtos = Arrays.asList(expenseDto);
+
+        when(incomeService.getIncomesByUserId(USER_ID)).thenReturn(Arrays.asList());
+        when(expenseService.getExpensesByUserId(USER_ID)).thenReturn(expenses);
+        when(mapper.toTransactionDtos(Arrays.asList(), expenses)).thenReturn(transactionDtos);
+
+        // Act
+        List<TransactionDto> result = reportService.findAllByUserId(USER_ID);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        verify(incomeService, times(1)).getIncomesByUserId(USER_ID);
+        verify(expenseService, times(1)).getExpensesByUserId(USER_ID);
+    }
+
+    @Test
+    void testGetTotalIncome_Zero() {
+        // Arrange
+        when(incomeService.getTotalIncome(USER_ID)).thenReturn(BigDecimal.ZERO);
+
+        // Act
+        BigDecimal result = reportService.getTotalIncome(USER_ID);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(0, BigDecimal.ZERO.compareTo(result));
+    }
+
+    @Test
+    void testGetTotalExpense_Zero() {
+        // Arrange
+        when(expenseService.getTotalExpense(USER_ID)).thenReturn(BigDecimal.ZERO);
+
+        // Act
+        BigDecimal result = reportService.getTotalExpense(USER_ID);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(0, BigDecimal.ZERO.compareTo(result));
+    }
 }

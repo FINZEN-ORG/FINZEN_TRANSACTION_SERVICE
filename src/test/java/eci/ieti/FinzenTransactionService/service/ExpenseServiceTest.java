@@ -123,4 +123,53 @@ class ExpenseServiceTest {
         assertNotNull(result);
         assertEquals(1, result.size());
     }
+
+    @Test
+    void testDelete_Success() {
+        testExpense.setCreatedAt(LocalDateTime.now().minusHours(12));
+        when(expenseRepository.findById(1L)).thenReturn(Optional.of(testExpense));
+        doNothing().when(expenseRepository).delete(testExpense);
+
+        expenseService.delete(1L, USER_ID);
+
+        verify(expenseRepository, times(1)).delete(testExpense);
+    }
+
+    @Test
+    void testDelete_ExpenseNotFound() {
+        when(expenseRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThrows(Exception.class, () -> {
+            expenseService.delete(1L, USER_ID);
+        });
+    }
+
+    @Test
+    void testDelete_WrongUser() {
+        testExpense.setUserId(999L);
+        when(expenseRepository.findById(1L)).thenReturn(Optional.of(testExpense));
+
+        assertThrows(Exception.class, () -> {
+            expenseService.delete(1L, USER_ID);
+        });
+    }
+
+    @Test
+    void testDelete_ExpiredPeriod() {
+        testExpense.setCreatedAt(LocalDateTime.now().minusHours(25));
+        when(expenseRepository.findById(1L)).thenReturn(Optional.of(testExpense));
+
+        assertThrows(Exception.class, () -> {
+            expenseService.delete(1L, USER_ID);
+        });
+    }
+
+    @Test
+    void testCreateExpense_CategoryNotFound() {
+        when(categoryRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThrows(Exception.class, () -> {
+            expenseService.create(testExpenseDto, USER_ID);
+        });
+    }
 }
