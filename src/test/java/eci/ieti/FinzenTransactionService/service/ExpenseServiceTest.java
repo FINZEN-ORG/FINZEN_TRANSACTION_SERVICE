@@ -1,51 +1,126 @@
 package eci.ieti.FinzenTransactionService.service;
-/*
+import eci.ieti.FinzenTransactionService.dto.CategoryTotalDto;
 import eci.ieti.FinzenTransactionService.dto.ExpenseDto;
 import eci.ieti.FinzenTransactionService.mappers.TransactionMapper;
 import eci.ieti.FinzenTransactionService.model.Category;
 import eci.ieti.FinzenTransactionService.model.Expense;
 import eci.ieti.FinzenTransactionService.repository.CategoryRepository;
 import eci.ieti.FinzenTransactionService.repository.ExpenseRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 class ExpenseServiceTest {
 
-	@Test
-	void create_whenCategoryExists_savesExpenseAndUpdatesBudgetIfPresent() {
-		ExpenseRepository expenseRepository = Mockito.mock(ExpenseRepository.class);
-		CategoryRepository categoryRepository = Mockito.mock(CategoryRepository.class);
-		TransactionMapper mapper = Mockito.mock(TransactionMapper.class);
+    @Mock
+    private ExpenseRepository expenseRepository;
 
-		BudgetService dummyBudgetService = Mockito.mock(BudgetService.class);
+    @Mock
+    private CategoryRepository categoryRepository;
 
-		ExpenseService service = new ExpenseService(expenseRepository, categoryRepository, dummyBudgetService, mapper);
+    @Mock
+    private TransactionMapper mapper;
 
-		ExpenseDto dto = new ExpenseDto(null, 30.0, "Snack", 2L, null, null);
+    @InjectMocks
+    private ExpenseService expenseService;
 
-		Category cat = new Category();
-		cat.setId(2L);
+    private Category testCategory;
+    private Expense testExpense;
+    private ExpenseDto testExpenseDto;
+    private final Long USER_ID = 1L;
 
-		Expense expenseEntity = new Expense();
-		expenseEntity.setAmount(30.0);
+    @BeforeEach
+    void setUp() {
+        testCategory = new Category();
+        testCategory.setId(1L);
+        testCategory.setName("Food");
+        testCategory.setType("EXPENSE");
 
-		Mockito.when(categoryRepository.findById(2L)).thenReturn(Optional.of(cat));
-		Mockito.when(mapper.toExpense(dto)).thenReturn(expenseEntity);
-		Mockito.when(expenseRepository.save(Mockito.any(Expense.class))).thenAnswer(i -> {
-			Expense e = i.getArgument(0);
-			e.setId(15L);
-			e.setCreatedAt(LocalDateTime.now());
-			return e;
-		});
+        testExpense = new Expense();
+        testExpense.setId(1L);
+        testExpense.setAmount(new BigDecimal("50.00"));
+        testExpense.setDescription("Lunch");
+        testExpense.setCategory(testCategory);
+        testExpense.setUserId(USER_ID);
+        testExpense.setDate(LocalDateTime.now());
 
-		Expense result = service.create(dto, 1L);
-		assertNotNull(result);
-		assertEquals(15L, result.getId());
-	}
+        testExpenseDto = new ExpenseDto(
+                1L,
+                new BigDecimal("50.00"),
+                "Lunch",
+                1L,
+                LocalDateTime.now(),
+                LocalDateTime.now()
+        );
+    }
+
+    @Test
+    void testCreateExpense_Success() {
+        when(categoryRepository.findById(1L)).thenReturn(Optional.of(testCategory));
+        when(mapper.toExpense(any(ExpenseDto.class))).thenReturn(testExpense);
+        when(expenseRepository.save(any(Expense.class))).thenReturn(testExpense);
+        Expense result = expenseService.create(testExpenseDto, USER_ID);
+        assertNotNull(result);
+        assertEquals(USER_ID, result.getUserId());
+        verify(expenseRepository, times(1)).save(any(Expense.class));
+    }
+
+    @Test
+    void testGetExpensesByUserId() {
+        List<Expense> expenses = Arrays.asList(testExpense);
+        when(expenseRepository.findByUserId(USER_ID)).thenReturn(expenses);
+        List<Expense> result = expenseService.getExpensesByUserId(USER_ID);
+        assertNotNull(result);
+        assertEquals(1, result.size());
+    }
+
+    @Test
+    void testFindByUserId() {
+        List<Expense> expenses = Arrays.asList(testExpense);
+        List<ExpenseDto> expenseDtos = Arrays.asList(testExpenseDto);
+        when(expenseRepository.findByUserId(USER_ID)).thenReturn(expenses);
+        when(mapper.toExpenseDtos(expenses)).thenReturn(expenseDtos);
+        List<ExpenseDto> result = expenseService.findByUserId(USER_ID);
+        assertNotNull(result);
+        assertEquals(1, result.size());
+    }
+
+    @Test
+    void testGetTotalExpense() {
+        BigDecimal expectedTotal = new BigDecimal("50.00");
+        when(expenseRepository.sumByUserId(USER_ID)).thenReturn(expectedTotal);
+        BigDecimal result = expenseService.getTotalExpense(USER_ID);
+        assertNotNull(result);
+        assertEquals(0, expectedTotal.compareTo(result));
+    }
+
+    @Test
+    void testGetCategorySummaries() {
+        LocalDateTime startDate = LocalDateTime.now().minusDays(30);
+        LocalDateTime endDate = LocalDateTime.now();
+
+        List<CategoryTotalDto> summaries = Arrays.asList(
+                new CategoryTotalDto(1L, new BigDecimal("200.00"))
+        );
+        when(expenseRepository.sumExpensesByCategoryAndDateRange(
+                eq(USER_ID), eq(startDate), eq(endDate)))
+                .thenReturn(summaries);
+        List<CategoryTotalDto> result = expenseService.getCategorySummaries(USER_ID, startDate, endDate);
+        assertNotNull(result);
+        assertEquals(1, result.size());
+    }
 }
-*/
